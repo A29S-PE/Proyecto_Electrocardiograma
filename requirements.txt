@@ -1,6 +1,7 @@
 # --- App base ---
 streamlit==1.37.1
 plotly==5.22.0
+requests==2.31.0
 
 # --- ECG / señales ---
 wfdb==4.1.2
