@@ -1,0 +1,13 @@
+# --- App base ---
+streamlit==1.37.1
+plotly==5.22.0
+
+# --- ECG / señales ---
+wfdb==4.1.2
+neurokit2==0.2.12
+
+# --- Numérico / DataFrame / gráficos ---
+numpy==1.26.4
+scipy==1.11.4
+pandas==2.2.2
+matplotlib==3.8.4
