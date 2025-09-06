@@ -286,10 +286,9 @@ if sel_idx is not None and not df_view.empty:
     r_idx_local = info.get("ECG_R_Peaks", np.array([], dtype=int))
     # Ajustar índices a tiempo absoluto
     r_idx_abs = r_idx_local + i0
-
     # RR y FC
     rr_s, hr, t_hr = compute_hr_from_peaks(r_idx_local, fs)
-
+    rr_s_a, hr_a, t_hr_a = compute_hr_from_peaks(r_idx_abs, fs)
     # ----------------- Layout de visualización -----------------
     colA, colB = st.columns([3.1, 1.0], vertical_alignment="top")
 
@@ -306,13 +305,25 @@ if sel_idx is not None and not df_view.empty:
                 mode="markers", name="Picos R", marker=dict(size=7, symbol="x", color="red")
             ))
         fig = apply_ecg_layout(fig, t_max=(t0 + win_seconds), y_data=y_plot, t_start=t0)
+        fig.update_layout(
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=1.02,
+                    xanchor="center",
+                    x=0.5
+                )
+            )
         st.plotly_chart(fig, use_container_width=True)
 
         if show_hr_curve and hr.size > 0:
             fig_hr = go.Figure()
             fig_hr.add_trace(go.Scatter(x=t_hr + t0, y=hr, mode="lines+markers", name="FC (lpm)"))
             fig_hr.update_layout(
-                xaxis_title="Tiempo (s)",
+                xaxis=dict(
+                    range=[t0, (t0 + win_seconds)],
+                    title="Tiempo (s)"
+                ),
                 yaxis_title="lpm",
                 height=260,
                 margin=dict(l=40, r=20, t=30, b=40),
@@ -371,4 +382,5 @@ if sel_idx is not None and not df_view.empty:
         )
 else:
     st.info("Selecciona una ruta válida y un registro para comenzar.")
+
 
