@@ -1,6 +1,6 @@
 # app_ecg.py
 # Dash de ECG multi-paciente con FC (RR) + alertas
-import os
+import os, base64
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -15,8 +15,10 @@ from drive import *
 st.set_page_config(page_title="ECG (FC & RR)", layout="wide")
 
 # ----------------- Parámetros iniciales -----------------
-DEFAULT_ROOT = r"D:\Documentos\Cursos\Diplomatura IA\Modulo3\Redes Neuronales para el Análisis de Series Temporales\Proyecto\ECG\a-large-scale-12-lead-electrocardiogram-database-for-arrhythmia-study-1.0.0\WFDBRecords"
+DEFAULT_ROOT = "/content/drive/MyDrive/WFDBRecords"
 PREFERRED_LEADS = ["II", "MLII", "V2", "V5", "I", "AVF", "V1", "III"]
+PAPEL_IMAGEN = 'papel.jpg'
+DATASET_IMAGEN = 'dataset.jpg'
 REMOTE_MODE = True
 
 # ----------------- Utilidades -----------------
@@ -97,6 +99,11 @@ def load_record_drive(record_id: str):
         signals, fields = wfdb.rdsamp(os.path.join(tmpdir, record_id))
         return signals, fields
     
+@st.cache_resource
+def load_image(image_path):
+    with open(image_path, "rb") as f:
+        return base64.b64encode(f.read()).decode()
+        
 def choose_best_lead(sig_names: list[str]) -> int:
     """Intenta elegir una derivación 'ideal' (II/MLII ...). Devuelve índice."""
     upper = [str(s).strip().upper() for s in sig_names]
@@ -189,6 +196,7 @@ def apply_ecg_layout(fig: Figure, t_max, y_data, t_start=0):
         plot_bgcolor="white",
         margin=dict(l=40, r=20, t=40, b=40)
     )
+    fig.update_yaxes(title_standoff=2)
     return fig
 
 # ----------------- Sidebar -----------------
@@ -234,6 +242,66 @@ show_hr_curve = st.sidebar.checkbox("Mostrar curva de FC (lpm)", value=True)
 download_csv = st.sidebar.checkbox("Preparar CSV RR/FC para descarga", value=True)
 
 # ----------------- Main -----------------
+dataset_base64_img = load_image(DATASET_IMAGEN)
+papel_base64_img = load_image(PAPEL_IMAGEN)
+
+st.markdown(f"""
+<style>
+.tooltip {{
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}}
+
+.tooltip .tooltiptext {{
+  visibility: hidden;
+  width: 700px;
+  background-color: #f9f9f9;
+  color: #333;
+  text-align: left;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  padding: 10px;
+  position: absolute;
+  z-index: 1;
+  top: 100%;
+  left: 0;
+  font-size: 14px;
+}}
+
+.tooltip:hover .tooltiptext {{
+  visibility: visible;
+}}
+
+.tooltip .caption {{
+  font-size: 10px;
+  color: #777;
+  text-align: center;
+  margin-top: 5px;
+}}
+</style>
+
+<div class="tooltip">ℹ️
+  <div class="tooltiptext">
+      <b>Dataset utilizado:</b><br>
+      <a href="https://physionet.org/content/ecg-arrhythmia/1.0.0/" target="_blank">
+      A large scale 12-lead electrocardiogram database for arrhythmia study</a>
+      <br><br>
+      Este conjunto de datos contiene <b>ECGs de 12 derivaciones</b> de más de <b>45,152 pacientes</b>, 
+      desarrollado en colaboración con Chapman University, Shaoxing People’s Hospital 
+      y Ningbo First Hospital. Incluye señales con una tasa de muestreo de <b>500 Hz</b>, 
+      etiquetadas por profesionales, abarcando múltiples ritmos y arritmias como la fibrilación auricular. 
+      Es un recurso clave para entrenar y validar modelos de <b>machine learning</b> 
+      aplicados al diagnóstico automatizado de enfermedades cardiovasculares.
+      <br><br>
+      <img src="data:image/png;base64,{dataset_base64_img}" width="100%">
+      <div class="caption">ECG dataset – PhysioNet</div>
+    </div>
+  </div>
+""", unsafe_allow_html=True)
+
+
+
 st.title("Análisis de ECG – Frecuencia Cardíaca (RR) y Picos R")
 st.caption("Método: FC = 60 / RR (segundos). La detección de picos R se realiza con neurokit2.")
 
@@ -293,7 +361,52 @@ if sel_idx is not None and not df_view.empty:
     colA, colB = st.columns([3.1, 1.0], vertical_alignment="top")
 
     with colA:
-        st.subheader(f"Señal ECG – {row['id']} | Derivación: {lead_name} | fs={fs:g} Hz")
+        st.markdown(f"""
+            <style>
+            .tooltip-title {{
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            }}
+
+            .tooltip-title .tooltiptext {{
+            visibility: hidden;
+            width: 600px;
+            background-color: #f9f9f9;
+            color: #333;
+            text-align: left;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            top: 120%;
+            left: 0;
+            font-size: 16px;
+            }}
+
+            .tooltip-title:hover .tooltiptext {{
+            visibility: visible;
+            }}
+            .tooltip-title .caption {{
+            font-size: 11px;
+            color: #777;
+            text-align: center;
+            margin-top: 5px;
+            }}
+            </style>
+
+            <h3 class="tooltip-title">
+            Señal ECG – {row['id']} | Derivación: {lead_name} | fs={fs:g} Hz
+            <span class="tooltiptext">
+                <b>Medidas del papel ECG:</b><br>
+                Cada cuadro pequeño equivale a <b>0.04 s (40 ms)</b> horizontal y 
+                <b>0.1 mV</b> vertical.<br><br>
+                <img src="data:image/png;base64,{papel_base64_img}" width="100%">
+                <div class="caption">Ejemplo de papel ECG cuadriculado</div>
+            </span>
+            </h3>
+            """, unsafe_allow_html=True)
         # t_segment = np.linspace(t0, t0 + win_seconds, len(y), endpoint=False)
         t_plot, y_plot = downsample_for_plot(t, y)
         fig = go.Figure()
@@ -329,6 +442,7 @@ if sel_idx is not None and not df_view.empty:
                 margin=dict(l=40, r=20, t=30, b=40),
                 showlegend=False
             )
+            fig_hr.update_yaxes(title_standoff=2)
             st.plotly_chart(fig_hr, use_container_width=True)
 
     with colB:
