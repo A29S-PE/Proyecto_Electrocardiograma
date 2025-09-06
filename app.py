@@ -11,17 +11,23 @@ import plotly.graph_objects as go
 from plotly.graph_objects import Figure
 import tempfile
 from drive import *
+import tensorflow as tf
 
 st.set_page_config(page_title="ECG (FC & RR)", layout="wide")
 
 # ----------------- Parámetros iniciales -----------------
 DEFAULT_ROOT = "/content/drive/MyDrive/WFDBRecords"
 PREFERRED_LEADS = ["II", "MLII", "V2", "V5", "I", "AVF", "V1", "III"]
+TARGET_CLASSES = ["Sinus Bradycardia", "Sinus Rhythm", "Atrial Fibrillation", "Sinus Tachycardia"]
 PAPEL_IMAGEN = 'papel.jpg'
 DATASET_IMAGEN = 'dataset.jpg'
 REMOTE_MODE = True
 
 # ----------------- Utilidades -----------------
+@st.cache_resource
+def load_ecg_model():
+    return tf.keras.models.load_model("ecg_model")
+    
 @st.cache_data(show_spinner=True)
 def index_records(root_dir: str, remote: bool = False) -> pd.DataFrame:
     """
@@ -198,6 +204,9 @@ def apply_ecg_layout(fig: Figure, t_max, y_data, t_start=0):
     )
     fig.update_yaxes(title_standoff=2)
     return fig
+
+model = load_ecg_model()
+infer = model.signatures["serving_default"]
 
 # ----------------- Sidebar -----------------
 st.sidebar.header("⚙️ Configuración")
@@ -483,6 +492,14 @@ if sel_idx is not None and not df_view.empty:
         else:
             st.warning("No se detectaron suficientes picos R en la ventana seleccionada. Prueba otra derivación o mueve la ventana.")
 
+        st.subheader("Clasificación del modelo")
+        if len(labels) > 0:
+            for lbl, prob in zip(TARGET_CLASSES, probs):
+                st.write(f"**{lbl}**: {prob:.2%}")
+            st.success(f"Predicción principal: {', '.join(labels)}")
+        else:
+            st.warning("No se detectaron clases con probabilidad sobre el umbral.")
+            
     # Notas técnicas
     with st.expander("📌 Detalles técnicos"):
         st.markdown(
@@ -496,5 +513,6 @@ if sel_idx is not None and not df_view.empty:
         )
 else:
     st.info("Selecciona una ruta válida y un registro para comenzar.")
+
 
 
