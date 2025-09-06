@@ -10,10 +10,9 @@ INDEX_FILE_ID = "1cfG6JUdAZ3SknBu-SG2shsiB5cvdxQAK"
 
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
 
-service_account_info = json.loads(st.secrets["SERVICE_ACCOUNT_JSON"])
-
 credentials = service_account.Credentials.from_service_account_info(
-    service_account_info, scopes=SCOPES
+    dict(st.secrets["google"]),
+    scopes=SCOPES
 )
 
 drive_service = build('drive', 'v3', credentials=credentials)
@@ -47,3 +46,4 @@ def find_file_id(record_id: str, ext: str):
         return files[0]['id']
 
     return None
+
