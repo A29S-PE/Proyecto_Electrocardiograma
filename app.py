@@ -220,7 +220,6 @@ def apply_ecg_layout(fig: Figure, t_max, y_data, t_start=0):
     return fig
 
 model = load_ecg_model()
-infer = model.signatures["serving_default"]
 
 # ----------------- Sidebar -----------------
 st.sidebar.header("⚙️ Configuración")
@@ -530,6 +529,7 @@ if sel_idx is not None and not df_view.empty:
         )
 else:
     st.info("Selecciona una ruta válida y un registro para comenzar.")
+
 
 
 
