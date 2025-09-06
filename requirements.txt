@@ -9,12 +9,13 @@ google-auth-oauthlib
 # --- ECG / señales ---
 wfdb==4.1.2
 neurokit2==0.2.12
-tensorflow==2.13
+tensorflow==2.19
 
 # --- Numérico / DataFrame / gráficos ---
 numpy==1.26.4
 pandas==2.2.2
 matplotlib==3.8.4
+
 
 
 
