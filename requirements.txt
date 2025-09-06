@@ -2,7 +2,8 @@
 streamlit==1.37.1
 plotly==5.22.0
 google-api-python-client
-google-auth google-auth-httplib2
+google-auth 
+google-auth-httplib2
 google-auth-oauthlib
 
 # --- ECG / señales ---
@@ -13,5 +14,6 @@ neurokit2==0.2.12
 numpy==1.26.4
 pandas==2.2.2
 matplotlib==3.8.4
+
 
 
