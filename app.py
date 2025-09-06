@@ -17,7 +17,6 @@ st.set_page_config(page_title="ECG (FC & RR)", layout="wide")
 # ----------------- Parámetros iniciales -----------------
 DEFAULT_ROOT = r"D:\Documentos\Cursos\Diplomatura IA\Modulo3\Redes Neuronales para el Análisis de Series Temporales\Proyecto\ECG\a-large-scale-12-lead-electrocardiogram-database-for-arrhythmia-study-1.0.0\WFDBRecords"
 PREFERRED_LEADS = ["II", "MLII", "V2", "V5", "I", "AVF", "V1", "III"]
-REMOTE_API = "https://display-nine-slot-encouraging.trycloudflare.com"
 REMOTE_MODE = True
 
 # ----------------- Utilidades -----------------
@@ -372,3 +371,4 @@ if sel_idx is not None and not df_view.empty:
         )
 else:
     st.info("Selecciona una ruta válida y un registro para comenzar.")
+
