@@ -28,10 +28,6 @@ records_index = json.loads(fh.read().decode("utf-8"))
 print(f"Índice cargado: {len(records_index)} registros")
 
 
-def get_records_index():
-    return records_index
-
-
 def find_file_id(record_id: str, ext: str):
     filename = f"{record_id}.{ext}"
     query = f"name = '{filename}' and trashed = false"
@@ -46,4 +42,5 @@ def find_file_id(record_id: str, ext: str):
         return files[0]['id']
 
     return None
+
 
