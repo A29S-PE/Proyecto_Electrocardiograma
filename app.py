@@ -338,14 +338,19 @@ if sel_idx is not None and not df_view.empty:
     except Exception as e:
         st.error(f"No se pudo cargar el registro: {e}")
         st.stop()
-
-    ecg_lead = signals[:, 0]
-    probs, labels = predict_signal(ecg_lead)
     
     fs = float(fields.get("fs", row["fs"]))
     sig_names = fields.get("sig_name", [f"ch{i+1}" for i in range(signals.shape[1])])
     duration_s = signals.shape[0] / fs
 
+    if "II" in sig_names:
+        lead_ii_idx = sig_names.index("II")
+    else:
+        lead_ii_idx = 0
+
+    ecg_lead = signals[:, lead_ii_idx]
+    probs, labels = predict_signal(ecg_lead)
+    
     # Elegir derivación
     if lead_mode == "Elegir manualmente":
         lead_name = st.selectbox("Elige derivación disponible", sig_names)
@@ -529,6 +534,7 @@ if sel_idx is not None and not df_view.empty:
         )
 else:
     st.info("Selecciona una ruta válida y un registro para comenzar.")
+
 
 
 
