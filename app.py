@@ -1,6 +1,6 @@
 # app_ecg.py
 # Dash de ECG multi-paciente con FC (RR) + alertas
-import requests
+import os
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -10,13 +10,14 @@ import streamlit as st
 import plotly.graph_objects as go
 from plotly.graph_objects import Figure
 import tempfile
+from drive import *
 
 st.set_page_config(page_title="ECG (FC & RR)", layout="wide")
 
 # ----------------- Parámetros iniciales -----------------
 DEFAULT_ROOT = r"D:\Documentos\Cursos\Diplomatura IA\Modulo3\Redes Neuronales para el Análisis de Series Temporales\Proyecto\ECG\a-large-scale-12-lead-electrocardiogram-database-for-arrhythmia-study-1.0.0\WFDBRecords"
 PREFERRED_LEADS = ["II", "MLII", "V2", "V5", "I", "AVF", "V1", "III"]
-REMOTE_API = "https://proyecto-api-ecg.onrender.com"
+REMOTE_API = "https://display-nine-slot-encouraging.trycloudflare.com"
 REMOTE_MODE = True
 
 # ----------------- Utilidades -----------------
@@ -28,9 +29,7 @@ def index_records(root_dir: str, remote: bool = False) -> pd.DataFrame:
     """
     if remote:
         try:
-            r = requests.get(f"{REMOTE_API}/records")
-            r.raise_for_status()
-            df = pd.DataFrame(r.json())
+            df = pd.DataFrame(records_index)
             if not df.empty:
                 df = df.sort_values(["carpeta", "id"]).reset_index(drop=True)
             return df
@@ -78,17 +77,25 @@ def load_record(base_path: str):
     return signals, fields
 
 @st.cache_resource(show_spinner=False)
-def load_record_remote(record_id: str):
+def load_record_drive(record_id: str):
     with tempfile.TemporaryDirectory() as tmpdir:
         for ext in ["hea", "mat"]:
-            url = f"{REMOTE_API}/record/{record_id}/{ext}"
-            r = requests.get(url)
-            if r.status_code != 200:
-                raise RuntimeError(f"Error descargando {record_id}.{ext}")
-            with open(f"{tmpdir}/{record_id}.{ext}", "wb") as f:
-                f.write(r.content)
+            file_id = find_file_id(record_id, ext)
+            if not file_id:
+                raise FileNotFoundError(f"No se encontró el archivo {record_id}.{ext} en Drive")
 
-        signals, fields = wfdb.rdsamp(f"{tmpdir}/{record_id}")
+            request = drive_service.files().get_media(fileId=file_id)
+            output_path = os.path.join(tmpdir, f"{record_id}.{ext}")
+
+            with open(output_path, "wb") as f:
+                downloader = MediaIoBaseDownload(f, request)
+                done = False
+                while not done:
+                    status, done = downloader.next_chunk()
+                    if status:
+                        print(f"[{ext}] Progreso: {int(status.progress() * 100)}%")
+
+        signals, fields = wfdb.rdsamp(os.path.join(tmpdir, record_id))
         return signals, fields
     
 def choose_best_lead(sig_names: list[str]) -> int:
@@ -236,7 +243,7 @@ if sel_idx is not None and not df_view.empty:
     # Carga de registro
     try:
         if REMOTE_MODE:
-            signals, fields = load_record_remote(row["id"])
+            signals, fields = load_record_drive(row["id"])
         else:
             signals, fields = load_record(row["base"])
     except Exception as e:
@@ -365,5 +372,3 @@ if sel_idx is not None and not df_view.empty:
         )
 else:
     st.info("Selecciona una ruta válida y un registro para comenzar.")
-
-
