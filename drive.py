@@ -1,6 +1,7 @@
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
+import streamlit as st
 import io
 import json
 
@@ -9,7 +10,11 @@ INDEX_FILE_ID = "1cfG6JUdAZ3SknBu-SG2shsiB5cvdxQAK"
 
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
 
-credentials = service_account.Credentials.from_service_account_file('substantial-art-471303-h3-1af3638890c8.json', scopes=SCOPES)
+service_account_info = json.loads(st.secrets["SERVICE_ACCOUNT_JSON"])
+
+credentials = service_account.Credentials.from_service_account_info(
+    service_account_info, scopes=SCOPES
+)
 
 drive_service = build('drive', 'v3', credentials=credentials)
 
@@ -40,4 +45,5 @@ def find_file_id(record_id: str, ext: str):
     files = results.get('files', [])
     if files:
         return files[0]['id']
+
     return None
