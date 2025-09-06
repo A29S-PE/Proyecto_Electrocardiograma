@@ -26,7 +26,21 @@ REMOTE_MODE = True
 # ----------------- Utilidades -----------------
 @st.cache_resource
 def load_ecg_model():
-    return tf.keras.models.load_model("ecg_model")
+    return tf.keras.models.load_model("ecg_cnn_best.h5")
+
+def predict_signal(signal, samples=5000, threshold=0.5):
+    if len(signal) > samples:
+        signal = signal[:samples]
+    else:
+        signal = np.pad(signal, (0, samples - len(signal)))
+
+    signal = (signal - np.mean(signal)) / (np.std(signal) + 1e-8)
+    X = signal.reshape(1, samples, 1)
+
+    probs = model.predict(X)[0]
+
+    labels = [TARGET_CLASSES[i] for i, p in enumerate(probs) if p >= threshold]
+    return probs, labels
     
 @st.cache_data(show_spinner=True)
 def index_records(root_dir: str, remote: bool = False) -> pd.DataFrame:
@@ -326,6 +340,9 @@ if sel_idx is not None and not df_view.empty:
         st.error(f"No se pudo cargar el registro: {e}")
         st.stop()
 
+    ecg_lead = signals[:, 0]
+    probs, labels = predict_signal(ecg_lead)
+    
     fs = float(fields.get("fs", row["fs"]))
     sig_names = fields.get("sig_name", [f"ch{i+1}" for i in range(signals.shape[1])])
     duration_s = signals.shape[0] / fs
@@ -513,6 +530,7 @@ if sel_idx is not None and not df_view.empty:
         )
 else:
     st.info("Selecciona una ruta válida y un registro para comenzar.")
+
 
 
 
